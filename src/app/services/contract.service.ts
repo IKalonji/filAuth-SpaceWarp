@@ -16,7 +16,7 @@ export class AccessControlService {
 
     // Connect to the contract using the ABI
     this.contract = new ethers.Contract(
-      '0xb281CD762341eCeC4fd601439C0c3901B2a25a20',
+      '0x5E24aBe3706f7d988713A4568e421223f4591BBc',
       abi,
       this.provider.getSigner()
     );

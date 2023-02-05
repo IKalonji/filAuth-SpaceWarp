@@ -57,6 +57,7 @@ contract FilAuthAccessToken{
         Organization storage org = OrgMapping[msg.sender];
         org.AccessRulesMapping[_accessLevel].UserIndex++;
         org.AccessRulesMapping[_accessLevel].hasAccess[_addr] = true;
+        org.AccessRulesMapping[_accessLevel].Users.push(_addr);
         org.NumberOfUsers++;
     }
 

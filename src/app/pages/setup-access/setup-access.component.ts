@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { ethers } from 'ethers';
 import { AccessRule, Link } from 'src/app/models/models';
+import { AccessControlService } from 'src/app/services/contract.service';
 
 @Component({
   selector: 'app-setup-access',
@@ -8,11 +10,12 @@ import { AccessRule, Link } from 'src/app/models/models';
   styleUrls: ['./setup-access.component.css']
 })
 export class SetupAccessComponent {
-  accessRules: AccessRule[] = [];
+  accessRules: string[] = [];
   accessRule: AccessRule = new AccessRule();
   link: Link = new Link();
 
-  profileId: string = "";
+  provider: any;
+  address: string = "";
 
   currentRuleUUID: string = "";
 
@@ -20,44 +23,31 @@ export class SetupAccessComponent {
   displayUpdateRule: boolean = false;
   displayRemoveRule: boolean = false;
 
-  constructor(private router: Router) {
-    const state = this.router.getCurrentNavigation()?.extras.state;
-    if(state) {
-      this.profileId = state['profileId'];
-      if(this.profileId) {
-        this.loadAccessRules(this.profileId);
-      }
-    }
+  constructor(private router: Router, private contractService: AccessControlService) {
+    this.provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    this.getAddress();
   }
 
-  loadAccessRules(profileId: string) {
-    //Service call
+  async getAddress() {
+    await this.provider.send("eth_requestAccounts", []).then((data:any) => {
+      this.address = data[0];
+      this.getAccessRules()
+    }).catch((e: any) => {
+    });
   }
 
-  navigateToUsers(uuid: string) {
-    this.router.navigate(["/users"], { state: { accessRuleId: uuid }});
+  getAccessRules = async () => {
+    await this.contractService.getAccessLevels().then((data => this.accessRules = data));
   }
 
-  createAccessRule() {
-    this.accessRules.push(this.accessRule);
+  createAccessRule = async () => {
+    await this.contractService.createAccessLevel(this.accessRule.description).then(() => {
+      this.getAccessRules();
+    }).catch((e:any) => {
+      console.log(e.message);
+    });
+    this.accessRules.push(this.accessRule.description);
     this.closeCreateRuleDialog();
-    this.accessRule = new AccessRule();
-  }
-
-  removeAccessRule() {
-    let index = this.accessRules.findIndex(ar => ar.uuid === this.currentRuleUUID);
-    if(index > -1) {
-      this.accessRules.splice(index, 1);
-    }
-    this.closeRemoveDialog();
-  }
-
-  updateAccessRule() {
-    let index = this.accessRules.findIndex(ar => ar.uuid === this.currentRuleUUID);
-    if(index > -1) {
-      this.accessRules[index] = this.accessRule;
-    }
-    this.closeUpdateRuleDialog();
   }
 
   createLink() {
@@ -72,30 +62,14 @@ export class SetupAccessComponent {
     }
   }
 
-  resetData() {
-    this.accessRule = new AccessRule();
-    this.link = new Link();
-    this.currentRuleUUID = "";
+  navigateToUsers(rule: string) {
+    this.router.navigate(["main/assign"], { state: { accessRuleName: rule }});
   }
 
   openCreateRuleDialog() {
     this.accessRule = new AccessRule();
     this.link = new Link();
     this.displayCreateRule = true;
-  }
-
-  openUpdateRuleDialog(uuid: string) {
-    this.displayUpdateRule = true;
-    this.currentRuleUUID = uuid;
-    let index = this.accessRules.findIndex(ar => ar.uuid === uuid);
-    if(index > -1) {
-      this.accessRule = this.accessRules[index];
-    }
-  }
-
-  openRemoveDialog(uuid: string) {
-    this.displayRemoveRule = true;
-    this.currentRuleUUID = uuid;
   }
 
   closeCreateRuleDialog() {
@@ -111,5 +85,11 @@ export class SetupAccessComponent {
   closeRemoveDialog() {
     this.displayRemoveRule = false;
     this.resetData();
+  }
+
+  resetData() {
+    this.accessRule = new AccessRule();
+    this.link = new Link();
+    this.currentRuleUUID = "";
   }
 }

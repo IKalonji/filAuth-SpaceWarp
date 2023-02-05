@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Organization } from 'src/app/models/models';
+import { ethers } from 'ethers';
+import { ProfileService } from 'src/app/services/profile/profile.service';
+import { AccessControlService } from 'src/app/services/contract.service';
 
 @Component({
   selector: 'app-manage-profile',
@@ -9,12 +12,13 @@ import { Organization } from 'src/app/models/models';
 })
 export class ManageProfileComponent {
 
-  organization: Organization;
+  organization?: Organization;
+  organizationName: string = "";
 
-  profileConnected: boolean = false;
-  displayConnectWalletDialog: boolean = false;
-  walletConnected: boolean = false;
-  connectWalletMessage: string = "Please make sure you are connected to your wallet before you continue...";
+  noAccessRules: number = 0;
+  noUsers: number = 0;
+
+  connected: boolean = true;
 
   displayCreateProfileDialog: boolean = false;
   displayUpdateProfileDialog: boolean = false;
@@ -22,65 +26,40 @@ export class ManageProfileComponent {
 
   disableEdit: boolean = true;
 
-  constructor(private router: Router) {
-    this.organization = this.getOrganizationDetails();
+  provider: any;
+  address: string = "";
+
+  constructor(private router: Router, private contractService: AccessControlService) {
+    this.provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   }
 
   ngOnInit() {
-    this.connectToWallet();
-
-    if(!this.walletConnected) {
-      this.showConnectWalletDialog();
-    } else {
-      this.connectToProfile();
-    }
+    this.connectToOrganization();
   }
 
-  getOrganizationDetails() {
-    return {
-      address: "HJF84FJHV5RKJV8RH4654E",
-      name : "Fil Auth Company Pty Ltd.",
-      country : "South Africa",
-      province : "Gauteng",
-      city : "Johannesburg",
-      zip : "2092",
-      statistics : this.getOrganizationStatistics()
-    };
+  connectToOrganization = async () => {
+    await this.provider.send("eth_requestAccounts", []).then(async (data: any) => {
+      this.address = data[0];
+      let orgRegistered = this.contractService.isOrgRegistered(this.address);
+      this.getStatistics();
+    }).catch((e: any) => {
+      this.connected = false;
+    });
   }
 
-  getOrganizationStatistics() {
-    return {
-      systems : 26,
-      rules : 79,
-      users : 1188
-    };
+  getStatistics = async () => {
+    await this.contractService.getAccessLevels().then((data) => this.noAccessRules = data.length).catch(() => this.noAccessRules = 0);
+    await this.contractService.getNumberOfUsers().then((data) => this.noUsers = data).catch(() => this.noUsers = 0);
   }
 
-  connectToWallet() {
-    this.walletConnected = true;
-  }
-
-  navigateToAccess() {
-    if(this.walletConnected) {
-      this.router.navigate(['/access'], { state: { profileId: this.organization.address }});
-    } else {
-      this.showConnectWalletDialog();
-    }
-  }
-
-  connectToProfile() {
-    if(this.organization?.address) {
-      this.profileConnected = true;
-    } else {
-      this.organization = new Organization();
-      this.profileConnected = false;
-    }
-  }
-
-  createOrganization() {
-    this.organization.address = "HJF84FJHV5RKJV8RH4654E";
+  createOrganization = async () => {
+    await this.contractService.registerOrganization(this.organizationName).then(() => {
+      this.connectToOrganization();
+    }).catch((e:any) => {
+      console.log(e.message);
+    });
     this.closeCreateProfileDialog();
-    this.connectToProfile();
+    this.connected = true;
   }
 
   updateOrganization() {
@@ -90,10 +69,14 @@ export class ManageProfileComponent {
 
   removeOrganization() {
     if(this.organization) {
-      this.organization = new Organization();
+      this.organization = new Organization("");
     }
-    this.connectToProfile();
+    this.connectToOrganization();
     this.closeRemoveProfileDialog();
+  }
+
+  navigateToAccess() {
+    this.router.navigate(['main/access']);
   }
 
   showCreateProfileDialog() {
@@ -118,13 +101,5 @@ export class ManageProfileComponent {
 
   closeRemoveProfileDialog() {
     this.displayRemoveProfileDialog = false;
-  }
-
-  showConnectWalletDialog() {
-    this.displayConnectWalletDialog = true;
-  }
-
-  closeConnectWalletDialog() {
-    this.displayConnectWalletDialog = false;
   }
 }

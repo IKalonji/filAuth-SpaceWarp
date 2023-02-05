@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ethers } from 'ethers';
 import { abi } from './../contracts/ABI/FilAuth';
+import  * as abiJson from '../contracts/ABI/FilAuth';
 
 @Injectable({
   providedIn: 'root'
@@ -15,69 +16,72 @@ export class AccessControlService {
 
     // Connect to the contract using the ABI
     this.contract = new ethers.Contract(
-      '<contractAddress>',
+      '0xb281CD762341eCeC4fd601439C0c3901B2a25a20',
       abi,
       this.provider.getSigner()
     );
   }
 
   async registerOrganization(orgName: string) {
-    const fee = ethers.BigNumber.from(1000);
+    let fee = ethers.BigNumber.from(10000);
     // Call the registerOrganization function
-    return this.contract.registerOrganization(orgName, { value: fee });
+    let transactions = await this.contract.registerOrganization(orgName, { value: fee });
+    transactions.wait()
+    return transactions
   }
 
   async createAccessLevel(accessLevel: string) {
     // Call the createAccessLevel function
-    return this.contract.createAccessLevel(accessLevel);
+    let transactions = await this.contract.createAccessLevel(accessLevel);
+    transactions.wait();
+    return transactions;
   }
 
-  async assignAccess(users: string[], accessLevel: string) {
+  async assignAccess(user: string, accessLevel: string) {
     // Call the assignAccess function
-    return this.contract.assignAccess(users, accessLevel);
+    let transactions = await this.contract.assignAccessToUser(user, accessLevel);
+    transactions.wait();
+    return transactions;
   }
 
-  async removeAccess(tokenIds: number[], accessLevel: string) {
+  async removeAccess(user: string, accessLevel: string) {
     // Call the removeAccess function
-    return this.contract.removeAccess(tokenIds, accessLevel);
+    let transactions = await this.contract.removeAccess(user, accessLevel);
+    transactions.wait();
+    return transactions;
   }
 
-  async getAccessUsers(accessLevel: string) {
+  async isOrgRegistered(orgAddress: string) {
+    let transactions = await this.contract.isOrgRegistered(orgAddress);
+    console.log(transactions)
+    //returns a bool value
+    return transactions;
+  }
+
+  async getNumberOfUsers() {
+    let transactions = await this.contract.returnNumberOfUsers();
+    console.log(transactions)
+    return transactions;
+  }
+
+  async getNumberOfAccessRules() {
+    let transactions = await this.contract.returnNumberOfAccessRules();
+    console.log(transactions)
+    return transactions;
+  }
+
+  async getUsers(accessLevelName: string) {
     // Call the getAccessLevelsList function
-    return this.contract.getAccessLevelsList(accessLevel);
+    let transactions = await this.contract.getUsers(accessLevelName);
+    console.log(transactions);
+    return transactions;
   }
 
-  async getAllAccessUsersByContract(contractAddr: string) {
-    // Call the getAccessUsersByContract function
-    return this.contract.getAccessUsersByContract(contractAddr);
-  }
-
-  // Listen to the LogOrganizationRegistered event
-  listenToLogOrganizationRegistered() {
-    return this.contract.on('LogOrganizationRegistered', (org, name) => {
-      console.log(`Organization registered: ${org} - ${name}`);
-    });
-  }
-
-  // Listen to the LogAccessLevelCreated event
-  listenToLogAccessLevelCreated() {
-    return this.contract.on('LogAccessLevelCreated', (org, accessLevel) => {
-      console.log(`Access level created: ${org} - ${accessLevel}`);
-    });
-  }
-
-  // Listen to the LogAccessAssigned event
-  listenToLogAccessAssigned() {
-    return this.contract.on('LogAccessAssigned', (org, user, accessLevel) => {
-      console.log(`Access assigned: ${org} - ${user} - ${accessLevel}`);
-    });
-  }
-
-  // Listen to the LogAccessRevoked event
-  listenToLogAccessRevoked() {
-    return this.contract.on('LogAccessRevoked', (org, user, accessLevel) => {
-      console.log(`Access revoked: ${org} - ${user} - ${accessLevel}`);
-    });
+  async getAccessLevels() {
+    // Call the getAccessLevelsList function
+    let transactions = await this.contract.getAccessLevels();
+    console.log(transactions)
+    return transactions;
   }
 }
 

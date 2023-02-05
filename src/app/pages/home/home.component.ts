@@ -16,9 +16,21 @@ export class HomeComponent {
   activeIndex: number = 0;
   items: MenuItem[] = [];
   instructions: any = [
-    { "step": "Profile", "instruction": "Create Your Organization Profile." },
-    { "step": "Access", "instruction": "Create Your Organization Access Rules." },
-    { "step": "Assign", "instruction": "Assign Access Rules To Users." },
+    { 
+      step: "Profile", 
+      instruction: "Create Your Organization Profile.",
+      image: "../../../assets/createprofile.PNG"
+    },
+    { 
+      step: "Access",
+      instruction: "Create Your Organization Access Rules",
+      image: "../../../assets/manageaccess.PNG"
+    },
+    { 
+      step: "Assign",
+      instruction: "Assign Access Rules To Users.",
+      image: "../../../assets/assignaccess.PNG"
+    },
   ]
   
   constructor(private router: Router, private walletService: WalletService) {}
@@ -27,15 +39,8 @@ export class HomeComponent {
     this.items = this.instructions.map((i:any) =>  { return { label: i.step };});
   }
 
-  async navigateToProfile() {
-    await this.walletService.connectWallet();
-    if (this.walletService.walletConnected == true){
-      console.log(this.walletService.walletConnected)
-      this.router.navigate(['/profile']);
-    } else {
-      alert("Please connect a wallet!")
-    }
-    
+  navigateToProfile() {
+    this.router.navigate(['/main']);
   }
 
   nextInstructionStep() {

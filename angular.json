@@ -25,7 +25,15 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "bn.js",
+              "aes-js",
+              "scrypt-js",
+              "js-sha3",
+              "bech32",
+              "hash.js"
+            ]
           },
           "configurations": {
             "production": {
